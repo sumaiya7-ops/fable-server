@@ -15,7 +15,7 @@ if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// ফাইল সেভিং কনফিগারেশন ইঞ্জিন
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, uploadDir);
@@ -25,7 +25,7 @@ const storage = multer.diskStorage({
   },
 });
 
-// 🟢 ফিক্সড মাল্টার অবজেক্ট ইঞ্জিন লকিং (টাইপো এরর সলিউশন)
+
 const upload = multer({ storage: storage });
 
 const app = express();
