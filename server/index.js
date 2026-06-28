@@ -322,7 +322,14 @@ async function run() {
       }
     });
 
-  
+    app.get("/users-count", async (req, res) => {
+      try {
+        const totalUsers = await usersCollection.countDocuments();
+        res.send({ totalUsers });
+      } catch (error) {
+        res.status(500).send({ message: "Internal Server Error", error: error.message });
+      }
+    });
 
     app.get("/users-list", async (req, res) => {
       try {
