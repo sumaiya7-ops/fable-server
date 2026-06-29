@@ -473,7 +473,7 @@ async function run() {
       try {
        
         const finalPdfUrl = req.file 
-          ? `http://localhost:5000/uploads/pdf/${req.file.filename}`
+          ? `https://fable-server-z2xt.onrender.com/uploads/pdf/${req.file.filename}`
           : (req.body.pdfUrl || "");
 
         const ebookDoc = {
