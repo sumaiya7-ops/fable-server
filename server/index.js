@@ -216,7 +216,6 @@ async function run() {
       }
     });
 
-    // --- DYNAMIC SINGLE EBOOK DETAILS ---
     app.get("/ebook/:id", async (req, res) => {
       try {
         const id = req.params.id;
