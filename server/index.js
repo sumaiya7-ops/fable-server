@@ -235,8 +235,7 @@ async function run() {
       }
     });
 
-    // REAL-TIME EBOOK DELETION ENGINE WITH ASYNC LOG NOTIFICATION
-    // 🛠️ আপনার ফ্রন্টঅ্যান্ডের সাথে মেলাতে ওরিজিনাল রাউট পাথ '/users/:id' অক্ষত রাখা হলো
+
     app.delete("/users/:id", async (req, res) => {
       try {
         const id = req.params.id;
