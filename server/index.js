@@ -47,7 +47,7 @@ const client = new MongoClient(process.env.MONGO_URI, {
   serverApi: { version: ServerApiVersion.v1, strict: true, deprecationErrors: true }
 });
 
-// 🛠️ ২. ফ্লেক্সিবল JWT ভেরিফিকেশন মিডলওয়্যার (Bearer ট্র্যাপ প্রোটেকশন সহ)
+
 const verifyJWT = (req, res, next) => {
   const authorization = req.headers.authorization;
   if (!authorization) {
