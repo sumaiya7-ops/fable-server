@@ -473,7 +473,7 @@ async function run() {
       res.send(result);
     });
 
-       // 📚 🛠️ ওরিজিনাল ফিক্স: আপনার ফ্রন্টঅ্যান্ডের সাথে ম্যাচ করতে রাউট পাথ নাম '/ebooks-add' থেকে পরিবর্তন করে '/ebooks' করা হলো
+      
     app.post("/ebooks", upload.single("pdfFile"), async (req, res) => {
       try {
         // ফ্রন্টএন্ড রুট এবং ব্যাকএন্ড লোকাল হোস্টিং গেটওয়ে সিঙ্ক
