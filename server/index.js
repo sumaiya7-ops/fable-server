@@ -31,7 +31,7 @@ const app = express();
 const port = process.env.PORT || 5000;
 
 app.use(cors({
-  origin: ["http://localhost:3000", "http://localhost:5173", process.env.CLIENT_LIVE_URL].filter(Boolean),
+  origin: ["https://fable-client-five.vercel.app", "http://localhost:5173", process.env.CLIENT_LIVE_URL].filter(Boolean),
   credentials: true
 }));
 
