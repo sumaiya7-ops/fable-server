@@ -9,7 +9,6 @@ const fs = require("fs");
 
 dotenv.config();
 
-// এক্সপ্রেস সার্ভারের ভেতর আপলোড করা ফাইলগুলো রাখার জন্য ফোল্ডার তৈরি করা
 const uploadDir = path.join(__dirname, "uploads", "pdf");
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
@@ -39,7 +38,6 @@ app.use(cors({
 app.use(express.json());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// 🟢 গ্লোবাল প্রোটেকশন ফিক্স: গিটহাব সিকিউরিটি ব্লক এড়াতে চাবিটি ডামি স্ট্রিং দিয়ে লক করা হলো
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY || "sk_test_fable_hidden_secure_gateway_key_bypass");
 
 
