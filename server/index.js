@@ -126,6 +126,22 @@ async function run() {
       }
     });
 
+    app.get("/writers-count", async (req, res) => {
+  try {
+    const totalWriters = await usersCollection.countDocuments({
+      role: "writer",
+    });
+
+    res.send({
+      totalWriters,
+    });
+  } catch (error) {
+    res.status(500).send({
+      message: "Failed to get writer count",
+    });
+  }
+});
+
     // SECURE PASSWORD RESET ENGINE (আসিনক্রোনাস নোটিফিকেশন ট্র্যাকিং সহ)
     app.post("/forgot-password", async (req, res) => {
       try {
@@ -272,7 +288,7 @@ async function run() {
         res.status(500).send({ message: "Update Failed", error: error.message });
       }
     });
-    app.get("/orders", async (req, res) => {
+    app.get("/orders", verifyJWT, verifyAdmin, async (req, res) => {
       try {
         const ordersWithDetails = await transactionsCollection.aggregate([
           {
@@ -310,7 +326,7 @@ async function run() {
           },
           {
             $project: {
-              _id: 1, transactionId: 1, amount: 1, date: 1, buyerEmail: 1,
+              _id: 1, transactionId: 1, ebookId: 1, amount: 1, date: 1, buyerEmail: 1,
               bookTitle: { $arrayElemAt: ["$bookInfo.title", 0] },
               buyerName: { $arrayElemAt: ["$userInfo.name", 0] }
             }
