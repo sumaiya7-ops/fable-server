@@ -476,7 +476,7 @@ async function run() {
       
     app.post("/ebooks", upload.single("pdfFile"), async (req, res) => {
       try {
-        // ফ্রন্টএন্ড রুট এবং ব্যাকএন্ড লোকাল হোস্টিং গেটওয়ে সিঙ্ক
+       
         const finalPdfUrl = req.file 
           ? `http://localhost:5000/uploads/pdf/${req.file.filename}`
           : (req.body.pdfUrl || "");
@@ -484,7 +484,7 @@ async function run() {
         const ebookDoc = {
           ...req.body,
           price: parseFloat(req.body.price || 0),
-          pdfUrl: finalPdfUrl, // 🟢 এবার আপনার আপলোড করা আসল ফাইলের লাইভ লিংক ডাটাবেজে লক হবে
+          pdfUrl: finalPdfUrl,
           status: "available",
           createdAt: new Date()
         };
