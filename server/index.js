@@ -388,44 +388,109 @@ async function run() {
       }
     });
 
-    app.post("/payment-success", verifyJWT, async (req, res) => {
-      try {
-        const { sessionId } = req.body;
-        const paymentIntent = await stripe.paymentIntents.retrieve(sessionId);
-        if (paymentIntent.status === "succeeded") {
-          const { ebookId, buyerEmail } = paymentIntent.metadata;
+    app.post("/create-checkout-session", verifyJWT, async (req, res) => {
+  try {
+    const { ebookId } = req.body;
 
-          const alreadyProcessed = await transactionsCollection.findOne({ transactionId: sessionId });
-          if (alreadyProcessed) return res.send({ success: true, message: "Already recorded" });
-
-          await transactionsCollection.insertOne({
-            transactionId: sessionId, type: "purchase", buyerEmail,
-            ebookId: ObjectId.isValid(ebookId) ? new ObjectId(ebookId) : ebookId,
-            amount: parseFloat(paymentIntent.amount / 100), date: new Date()
-          });
-
-          const updateQuery = ObjectId.isValid(ebookId) ? { _id: new ObjectId(ebookId) } : { id: parseInt(ebookId) || ebookId };
-          await ebooksCollection.updateOne(updateQuery, { 
-            $set: { status: "available" }, 
-            $inc: { sales: 1 } 
-          });
-
-          console.log(`✉️ Simulated Email: Purchase success notification emitted to ${buyerEmail}`);
-          res.send({ success: true, message: "Payment recorded!" });
-        }
-      } catch (error) { res.status(500).send({ message: "Success verification failed" }); }
+    const ebook = await ebooksCollection.findOne({
+      _id: new ObjectId(ebookId),
     });
 
-    app.post("/bookmarks", verifyJWT, async (req, res) => {
-      try {
-        const { ebookId } = req.body;
-        const userEmail = req.decoded.email;
-        if (await bookmarksCollection.findOne({ userEmail, ebookId })) {
-          return res.status(400).send({ message: "Already in your bookmarks!" });
-        }
-        res.send(await bookmarksCollection.insertOne({ userEmail, ebookId, createdAt: new Date() }));
-      } catch (error) { res.status(500).send({ message: "Failed to add bookmark" }); }
+    if (!ebook) {
+      return res.status(404).send({ message: "Ebook not found" });
+    }
+
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+      mode: "payment",
+
+      line_items: [
+        {
+          price_data: {
+            currency: "usd",
+            product_data: {
+              name: ebook.title,
+              images: [ebook.coverUrl],
+            },
+            unit_amount: Math.round(ebook.price * 100),
+          },
+          quantity: 1,
+        },
+      ],
+
+      success_url: `${process.env.CLIENT_LIVE_URL}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+
+      cancel_url: `${process.env.CLIENT_LIVE_URL}/payment-cancel`,
+
+      metadata: {
+        ebookId: ebook._id.toString(),
+        buyerEmail: req.decoded.email,
+      },
     });
+
+    res.send({
+      url: session.url,
+    });
+  } catch (err) {
+    res.status(500).send({
+      message: err.message,
+    });
+  }
+});
+
+  app.post("/payment-success", verifyJWT, async (req, res) => {
+  try {
+    const { sessionId } = req.body;
+
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+    if (session.payment_status === "paid") {
+      const { ebookId, buyerEmail } = session.metadata;
+
+      const alreadyProcessed = await transactionsCollection.findOne({
+        transactionId: sessionId,
+      });
+
+      if (alreadyProcessed) {
+        return res.send({
+          success: true,
+          message: "Already recorded",
+        });
+      }
+
+      await transactionsCollection.insertOne({
+        transactionId: sessionId,
+        type: "purchase",
+        buyerEmail,
+        ebookId: new ObjectId(ebookId),
+        amount: session.amount_total / 100,
+        date: new Date(),
+      });
+
+      await ebooksCollection.updateOne(
+        { _id: new ObjectId(ebookId) },
+        {
+          $inc: { sales: 1 },
+        }
+      );
+
+      return res.send({
+        success: true,
+        message: "Payment recorded!",
+      });
+    }
+
+    res.status(400).send({
+      message: "Payment not completed",
+    });
+
+  } catch (error) {
+    res.status(500).send({
+      message: "Success verification failed",
+      error: error.message,
+    });
+  }
+});
 
     app.get("/bookmarks", verifyJWT, async (req, res) => {
       try {
