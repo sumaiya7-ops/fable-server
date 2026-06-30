@@ -609,17 +609,73 @@ app.get("/user-purchased-ebooks", verifyJWT, async (req, res) => {
   }
 });
 
-    app.get("/bookmarks", verifyJWT, async (req, res) => {
-      try {
-        res.send(await bookmarksCollection.aggregate([
-          { $match: { userEmail: req.decoded.email } },
-          { $addFields: { ebookObjId: { $toObjectId: "$ebookId" } } },
-          { $lookup: { from: "ebooks", localField: "ebookObjId", foreignField: "_id", as: "ebookDetails" } },
-          { $unwind: "$ebookDetails" },
-          { $project: { _id: 1, ebookDetails: 1 } }
-        ]).toArray());
-      } catch (error) { res.status(500).send({ message: "Failed to fetch bookmarks" }); }
+
+
+   app.post("/bookmarks", verifyJWT, async (req, res) => {
+  try {
+    const { ebookId } = req.body;
+
+    const exists = await bookmarksCollection.findOne({
+      userEmail: req.decoded.email,
+      ebookId,
     });
+
+    if (exists) {
+      return res.status(400).send({
+        message: "Already bookmarked",
+      });
+    }
+
+    const result = await bookmarksCollection.insertOne({
+      userEmail: req.decoded.email,
+      ebookId,
+      createdAt: new Date(),
+    });
+
+    res.send(result);
+  } catch (error) {
+    res.status(500).send({
+      message: "Bookmark Failed",
+    });
+  }
+});
+
+app.get("/bookmarks", verifyJWT, async (req, res) => {
+  try {
+    const bookmarks = await bookmarksCollection.aggregate([
+      {
+        $match: {
+          userEmail: req.decoded.email,
+        },
+      },
+      {
+        $addFields: {
+          ebookObjId: {
+            $toObjectId: "$ebookId",
+          },
+        },
+      },
+      {
+        $lookup: {
+          from: "ebooks",
+          localField: "ebookObjId",
+          foreignField: "_id",
+          as: "bookDetails",
+        },
+      },
+      {
+        $unwind: "$bookDetails",
+      },
+    ]).toArray();
+
+    res.send(bookmarks);
+  } catch (error) {
+    res.status(500).send({
+      message: "Failed to fetch bookmarks",
+      error: error.message,
+    });
+  }
+});
 
     app.delete("/bookmarks/:id", verifyJWT, async (req, res) => {
       try {
