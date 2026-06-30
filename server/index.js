@@ -333,7 +333,7 @@ async function run() {
       }
     });
 
-// 🟢 এটি আপনার ওরিজিনাল ব্যাকএন্ড ফাইলের /writer-orders রাউটে রিপ্লেস করবেন
+// 🟢 আপনার ওরিじんাল ব্যাকএন্ড ফাইলের /writer-orders রাউটে এটি রিপ্লেস করুন
 app.get("/writer-orders", verifyJWT, async (req, res) => {
   try {
     const writerEmail = req.decoded?.email;
@@ -346,12 +346,29 @@ app.get("/writer-orders", verifyJWT, async (req, res) => {
       {
         $lookup: {
           from: "ebooks",
-          localField: "ebookId",      // 🚨 ডাটাবেজের ObjectId সরাসরি ম্যাচ করার স্ট্যান্ডার্ড নিয়ম
-          foreignField: "_id",
+          let: { ebook_id: "$ebookId" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $eq: [
+                    "$_id",
+                    {
+                      $cond: {
+                        if: { $eq: [{ $type: "$$ebook_id" }, "string"] },
+                        then: { $toObjectId: "$$ebook_id" },
+                        else: "$$ebook_id"
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          ],
           as: "bookInfo"
         }
       },
-      // সিকিউরিটি ফিল্টার: শুধু এই রাইটারের বইয়ের সেলস ডাটাই আসবে
+      // ১. ডাটাবেজ থেকে ম্যাচ করার পর শুধু এই রাইটারের বইগুলো ফিল্টার হবে
       {
         $match: {
           "bookInfo.writerEmail": writerEmail 
@@ -383,6 +400,7 @@ app.get("/writer-orders", verifyJWT, async (req, res) => {
     res.status(500).send({ message: "Internal Server Error", error: error.message });
   }
 });
+
 
 
 
