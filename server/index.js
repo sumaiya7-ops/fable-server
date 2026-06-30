@@ -611,7 +611,11 @@ app.get("/user-purchased-ebooks", verifyJWT, async (req, res) => {
 
 
 
-   app.post("/bookmarks", verifyJWT, async (req, res) => {
+  app.post("/bookmarks", verifyJWT, async (req, res) => {
+  console.log("POST /bookmarks HIT");
+  console.log(req.body);
+  console.log(req.decoded);
+
   try {
     const { ebookId } = req.body;
 
@@ -632,10 +636,15 @@ app.get("/user-purchased-ebooks", verifyJWT, async (req, res) => {
       createdAt: new Date(),
     });
 
+    console.log(result);
+
     res.send(result);
   } catch (error) {
+    console.log(error);
+
     res.status(500).send({
       message: "Bookmark Failed",
+      error: error.message,
     });
   }
 });
