@@ -400,6 +400,51 @@ app.get("/writer-orders", verifyJWT, async (req, res) => {
     res.status(500).send({ message: "Internal Server Error", error: error.message });
   }
 });
+
+// 🟢 ইউজার ড্যাশবোর্ডের জন্য সম্পূর্ণ আলাদা ও ডেডিকেটেড এন্ডপয়েন্ট (Requirement Fulfilled)
+app.get("/user-purchased-ebooks", verifyJWT, async (req, res) => {
+  try {
+    const buyerEmail = req.decoded?.email; // টোকেন থেকে লগইন করা ইউজারের ইমেইল নেওয়া হলো
+
+    if (!buyerEmail) {
+      return res.status(403).send({ message: "Forbidden Access" });
+    }
+
+    // ডাটাবেজ থেকে শুধুমাত্র এই ইউজারের কেনা বইগুলোই ফিল্টার হয়ে আসবে
+    const myPurchasedBooks = await transactionsCollection.aggregate([
+      {
+        // ১. ট্রানজেকশন বক্স থেকে ইউজারের ইমেইল ম্যাচিং
+        $match: { buyerEmail: buyerEmail } 
+      },
+      {
+        // ২. ই-বুক বক্স থেকে বইয়ের আইডি জয়েন করা (ObjectId সেফ পাইপলাইন)
+        $lookup: {
+          from: "ebooks",
+          localField: "ebookId",
+          foreignField: "_id",
+          as: "bookInfo"
+        }
+      },
+      {
+        // ৩. ফ্রন্টএন্ডে রেন্ডার করার জন্য ডেটা অবজেক্ট প্রজেকশন
+        $project: {
+          _id: 1,
+          transactionId: 1,
+          amount: 1,
+          date: 1,
+          ebookId: 1,
+          buyerEmail: 1
+        }
+      }
+    ]).toArray();
+
+    res.send(myPurchasedBooks);
+  } catch (error) {
+    res.status(500).send({ message: "Internal Server Error", error: error.message });
+  }
+});
+
+
     app.get("/users-count", async (req, res) => {
       try {
         const totalUsers = await usersCollection.countDocuments();
