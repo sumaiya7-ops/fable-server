@@ -706,15 +706,34 @@ app.get("/bookmarks", verifyJWT, async (req, res) => {
       } catch (error) { res.status(500).send({ message: "Failed" }); }
     });
 
-    app.get("/user/purchases", verifyJWT, async (req, res) => {
-      const result = await transactionsCollection.aggregate([
-        { $match: { buyerEmail: req.decoded.email } },
-        { $lookup: { from: "ebooks", localField: "ebookId", foreignField: "_id", as: "ebook" } },
-        { $unwind: "$ebook" }
-      ]).toArray();
-      res.send(result);
-    });
+ app.get("/user/purchases", verifyJWT, async (req, res) => {
+  try {
+    const result = await transactionsCollection.aggregate([
+      {
+        $match: {
+          buyerEmail: req.decoded.email,
+        },
+      },
+      {
+        $lookup: {
+          from: "ebooks",
+          localField: "ebookId",
+          foreignField: "_id",
+          as: "ebook",
+        },
+      },
+      {
+        $unwind: "$ebook",
+      },
+    ]).toArray();
 
+    res.send(result);
+  } catch (err) {
+    res.status(500).send({
+      message: "Failed to fetch purchases",
+    });
+  }
+});
       
     app.post("/ebooks", upload.single("pdfFile"), async (req, res) => {
       try {
