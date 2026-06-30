@@ -80,11 +80,22 @@ async function run() {
       next();
     };
 
-    const verifyWriter = async (req, res, next) => {
-      const user = await usersCollection.findOne({ email: req.decoded.email });
-      if (user?.role !== "writer" && user?.role !== "admin") return res.status(403).send({ error: true, message: "Writer Only" });
-      next();
-    };
+    const verifyAdminOrWriter = async (req, res, next) => {
+  const email = req.decoded.email;
+
+  const user = await usersCollection.findOne({ email });
+
+  if (
+    user.role !== "admin" &&
+    user.role !== "writer"
+  ) {
+    return res.status(403).send({
+      message: "Forbidden",
+    });
+  }
+
+  next();
+};
 
     // --- AUTH & USER ENDPOINTS (রোল ম্যাচিং ফিক্সড) ---
     app.post("/jwt", async (req, res) => {
@@ -764,9 +775,29 @@ app.get("/bookmarks", verifyJWT, async (req, res) => {
       res.send(await ebooksCollection.find({ writerEmail: req.decoded.email }).toArray());
     });
 
-    app.get("/writer/sales", verifyJWT, verifyWriter, async (req, res) => {
-      res.send(await transactionsCollection.find({ writerEmail: req.decoded.email }).toArray());
+  app.get(
+  "/writer/sales",
+  verifyJWT,
+  verifyAdminOrWriter,
+  async (req, res) => {
+    const user = await usersCollection.findOne({
+      email: req.decoded.email,
     });
+
+    if (user.role === "admin") {
+      // admin সব transaction দেখবে
+      const data = await transactionsCollection.find().toArray();
+      return res.send(data);
+    }
+
+    // writer নিজের sales দেখবে
+    const data = await transactionsCollection.find({
+      writerEmail: req.decoded.email,
+    }).toArray();
+
+    res.send(data);
+  }
+);
 
     app.get("/admin/analytics", verifyJWT, verifyAdmin, async (req, res) => {
       const totalUsers = await usersCollection.countDocuments({ role: "user" });
