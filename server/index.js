@@ -400,11 +400,6 @@ app.get("/writer-orders", verifyJWT, async (req, res) => {
     res.status(500).send({ message: "Internal Server Error", error: error.message });
   }
 });
-
-
-
-
-
     app.get("/users-count", async (req, res) => {
       try {
         const totalUsers = await usersCollection.countDocuments();
