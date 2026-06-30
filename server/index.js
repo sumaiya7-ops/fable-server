@@ -333,6 +333,72 @@ async function run() {
       }
     });
 
+
+    // 🟢 রাইটারদের জন্য সম্পূর্ণ আলাদা ও নিরাপদ সেলস হিস্ট্রি এপিআই
+app.get("/writer-orders", verifyJWT, async (req, res) => {
+  try {
+    const writerEmail = req.decoded?.email; // টোকেন থেকে রাইটারের ইমেইল নেওয়া হলো
+
+    if (!writerEmail) {
+      return res.status(403).send({ message: "Forbidden Access" });
+    }
+
+    const ordersWithDetails = await transactionsCollection.aggregate([
+      {
+        $lookup: {
+          from: "ebooks",
+          let: { ebook_id: "$ebookId" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $eq: [
+                    "$_id",
+                    {
+                      $cond: {
+                        if: { $eq: [{ $type: "$$ebook_id" }, "string"] },
+                        then: { $toObjectId: "$$ebook_id" },
+                        else: "$$ebook_id"
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          as: "bookInfo"
+        }
+      },
+      // 🚨 সিকিউরিটি ফিল্টার: ডাটাবেজ থেকে শুধু এই রাইটারের বইয়ের সেলস ডাটাই আসবে
+      {
+        $match: {
+          "bookInfo.writerEmail": writerEmail 
+        }
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "buyerEmail",
+          foreignField: "email",
+          as: "userInfo"
+        }
+      },
+      {
+        $project: {
+          _id: 1, transactionId: 1, ebookId: 1, amount: 1, date: 1, buyerEmail: 1,
+          bookTitle: { $arrayElemAt: ["$bookInfo.title", 0] },
+          buyerName: { $arrayElemAt: ["$userInfo.name", 0] }
+        }
+      }
+    ]).toArray();
+
+    res.send(ordersWithDetails);
+  } catch (error) {
+    res.status(500).send({ message: "Internal Server Error", error: error.message });
+  }
+});
+
+
     app.get("/users-count", async (req, res) => {
       try {
         const totalUsers = await usersCollection.countDocuments();
@@ -468,11 +534,16 @@ async function run() {
       });
 
       await ebooksCollection.updateOne(
-        { _id: new ObjectId(ebookId) },
-        {
-          $inc: { sales: 1 },
-        }
-      );
+  { _id: new ObjectId(ebookId) },
+  {
+    $inc: {
+      sales: 1,
+    },
+    $set: {
+      status: "sold",
+    },
+  }
+);
 
       return res.send({
         success: true,
