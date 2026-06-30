@@ -333,11 +333,10 @@ async function run() {
       }
     });
 
-
-    // 🟢 রাইটারদের জন্য সম্পূর্ণ আলাদা ও নিরাপদ সেলস হিস্ট্রি এপিআই
+// 🟢 এটি আপনার ওরিজিনাল ব্যাকএন্ড ফাইলের /writer-orders রাউটে রিপ্লেস করবেন
 app.get("/writer-orders", verifyJWT, async (req, res) => {
   try {
-    const writerEmail = req.decoded?.email; // টোকেন থেকে রাইটারের ইমেইল নেওয়া হলো
+    const writerEmail = req.decoded?.email;
 
     if (!writerEmail) {
       return res.status(403).send({ message: "Forbidden Access" });
@@ -347,29 +346,12 @@ app.get("/writer-orders", verifyJWT, async (req, res) => {
       {
         $lookup: {
           from: "ebooks",
-          let: { ebook_id: "$ebookId" },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $eq: [
-                    "$_id",
-                    {
-                      $cond: {
-                        if: { $eq: [{ $type: "$$ebook_id" }, "string"] },
-                        then: { $toObjectId: "$$ebook_id" },
-                        else: "$$ebook_id"
-                      }
-                    }
-                  ]
-                }
-              }
-            }
-          ],
+          localField: "ebookId",      // 🚨 ডাটাবেজের ObjectId সরাসরি ম্যাচ করার স্ট্যান্ডার্ড নিয়ম
+          foreignField: "_id",
           as: "bookInfo"
         }
       },
-      // 🚨 সিকিউরিটি ফিল্টার: ডাটাবেজ থেকে শুধু এই রাইটারের বইয়ের সেলস ডাটাই আসবে
+      // সিকিউরিটি ফিল্টার: শুধু এই রাইটারের বইয়ের সেলস ডাটাই আসবে
       {
         $match: {
           "bookInfo.writerEmail": writerEmail 
@@ -385,7 +367,11 @@ app.get("/writer-orders", verifyJWT, async (req, res) => {
       },
       {
         $project: {
-          _id: 1, transactionId: 1, ebookId: 1, amount: 1, date: 1, buyerEmail: 1,
+          _id: 1, 
+          transactionId: 1, 
+          amount: 1, 
+          date: 1, 
+          buyerEmail: 1,
           bookTitle: { $arrayElemAt: ["$bookInfo.title", 0] },
           buyerName: { $arrayElemAt: ["$userInfo.name", 0] }
         }
@@ -397,6 +383,8 @@ app.get("/writer-orders", verifyJWT, async (req, res) => {
     res.status(500).send({ message: "Internal Server Error", error: error.message });
   }
 });
+
+
 
 
     app.get("/users-count", async (req, res) => {
