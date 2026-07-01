@@ -6,6 +6,7 @@ const jwt = require("jsonwebtoken");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const genresCollection = database.collection("genres");
 
 
 dotenv.config();
@@ -362,6 +363,39 @@ app.get("/writers/top", async (req, res) => {
         res.status(500).send({ message: "Server Error" });
       }
     });
+
+    app.get("/genres", async (req, res) => {
+  try {
+    const genres = await genresCollection.find().toArray();
+    res.send(genres);
+  } catch (err) {
+    res.status(500).send({ message: "Failed to get genres" });
+  }
+});
+
+app.get("/genres/count", async (req, res) => {
+  try {
+    const result = await ebooksCollection.aggregate([
+      {
+        $group: {
+          _id: "$genre",
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $project: {
+          name: "$_id",
+          count: 1,
+          _id: 0,
+        },
+      },
+    ]).toArray();
+
+    res.send(result);
+  } catch (err) {
+    res.status(500).send({ message: "Failed to get genre counts" });
+  }
+});
 
 
     app.delete("/users/:id", async (req, res) => {
