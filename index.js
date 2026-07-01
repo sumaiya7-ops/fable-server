@@ -241,43 +241,37 @@ app.get("/writers/top", async (req, res) => {
           _id: "$writerEmail",
           name: { $first: "$writerName" },
           totalSales: { $sum: "$sales" },
-          totalBooks: { $sum: 1 },
-        },
-      },
-      avatar: 
-      { 
-        $first:
-        {$writer.avatar, },
+          totalBooks: { $sum: 1 }
+        }
       },
       {
-        $sort: {
-          totalSales: -1,
-        },
+        $sort: { totalSales: -1 }
       },
       {
-        $limit: 3,
-      },
+        $limit: 3
+      }
     ]).toArray();
 
     const finalWriters = await Promise.all(
       writers.map(async (writer) => {
         const user = await usersCollection.findOne({
-          email: writer._id,
+          email: writer._id
         });
 
         return {
           ...writer,
-          avatar: user?.avatar || "",
+          avatar: user?.avatar || ""
         };
       })
     );
 
     res.send(finalWriters);
+
   } catch (err) {
-    res.status(500).send(err);
+    console.error(err);
+    res.status(500).send({ message: "Server Error" });
   }
 });
-    
     app.post("/forgot-password", async (req, res) => {
       try {
         const { email } = req.body;
