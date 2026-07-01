@@ -185,7 +185,6 @@ app.get("/auth/google", async (req, res) => {
     `https://fable-client-five.vercel.app/login?token=${token}`
   );
 });
-
     app.get("/users/me", verifyJWT, async (req, res) => {
       const user = await usersCollection.findOne({ email: req.decoded.email });
       res.send(user);
