@@ -99,9 +99,17 @@ async function run() {
 
     // --- AUTH & USER ENDPOINTS (রোল ম্যাচিং ফিক্সড) ---
     app.post("/jwt", async (req, res) => {
-      const token = jwt.sign(req.body, process.env.JWT_SECRET, { expiresIn: "7d" });
-      res.send({ token });
-    });
+  const token = jwt.sign(
+    {
+      email: req.body.email,
+      role: req.body.role,
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: "7d" }
+  );
+
+  res.send({ token });
+});
 
     app.get("/users/me", verifyJWT, async (req, res) => {
       const user = await usersCollection.findOne({ email: req.decoded.email });
