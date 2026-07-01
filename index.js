@@ -244,6 +244,11 @@ app.get("/writers/top", async (req, res) => {
           totalBooks: { $sum: 1 },
         },
       },
+      avatar: 
+      { 
+        $first:
+        {$writer.avatar, },
+      },
       {
         $sort: {
           totalSales: -1,
