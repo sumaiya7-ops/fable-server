@@ -657,13 +657,31 @@ app.get("/user-purchased-ebooks", verifyJWT, async (req, res) => {
   try {
     const { ebookId } = req.body;
 
-    const ebook = await ebooksCollection.findOne({
-      _id: new ObjectId(ebookId),
-    });
+  const ebook = await ebooksCollection.findOne({
+  _id: new ObjectId(ebookId),
+});
+if (!ebook) {
+  return res.status(404).send({
+    message: "Ebook not found",
+  });
+}
+if (ebook.writerEmail === req.decoded.email) {
+  return res.status(400).send({
+    message: "You can't buy your own ebook",
+  });
+}
+const alreadyPurchased = await transactionsCollection.findOne({
+  buyerEmail: req.decoded.email,
+  ebookId: ebook._id,
+});
 
-    if (!ebook) {
-      return res.status(404).send({ message: "Ebook not found" });
-    }
+if (alreadyPurchased) {
+  return res.status(400).send({
+    message: "Already Purchased",
+  });
+}
+
+   
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
@@ -886,6 +904,75 @@ app.get("/bookmarks", verifyJWT, async (req, res) => {
       message: "Failed to fetch purchases",
     });
   }
+});
+
+app.get("/user/purchased/:ebookId", verifyJWT, async (req, res) => {
+  const { ebookId } = req.params;
+
+  const purchase = await transactionsCollection.findOne({
+    buyerEmail: req.decoded.email,
+    ebookId: new ObjectId(ebookId),
+  });
+
+  res.send({
+    purchased: !!purchase,
+  });
+});
+app.get("/ebook/read/:id", verifyJWT, async (req, res) => {
+  const { id } = req.params;
+
+  const purchase = await transactionsCollection.findOne({
+    buyerEmail: req.decoded.email,
+    ebookId: new ObjectId(id),
+  });
+
+  if (!purchase) {
+    return res.status(403).send({
+      message: "Purchase Required",
+    });
+  }
+
+  const book = await ebooksCollection.findOne({
+    _id: new ObjectId(id),
+  });
+
+  res.send({
+    pdfUrl: book.pdfUrl,
+  });
+});
+
+app.get("/ebook/download/:id", verifyJWT, async (req, res) => {
+  const { id } = req.params;
+
+  const purchase = await transactionsCollection.findOne({
+    buyerEmail: req.decoded.email,
+    ebookId: new ObjectId(id),
+  });
+
+  if (!purchase) {
+    return res.status(403).send({
+      message: "Purchase Required",
+    });
+  }
+
+  const book = await ebooksCollection.findOne({
+    _id: new ObjectId(id),
+  });
+
+  if (!book) {
+    return res.status(404).send({
+      message: "Ebook not found",
+    });
+  }
+
+  const filePath = path.join(
+    __dirname,
+    "uploads",
+    "pdf",
+    path.basename(book.pdfUrl)
+  );
+
+  res.download(filePath);
 });
       
     app.post("/ebooks", upload.single("pdfFile"), async (req, res) => {
