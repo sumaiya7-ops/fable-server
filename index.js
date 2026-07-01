@@ -145,10 +145,19 @@ const verifyWriter = async (req, res, next) => {
 
 // ✅ GOOGLE LOGIN ROUTE (FIXED)
 app.get("/auth/google", (req, res) => {
-  console.log("🔥 GOOGLE ROUTE HIT");
-  res.send("GOOGLE ROUTE WORKING");
-});
+  const token = jwt.sign(
+    {
+      email: "googleuser@gmail.com",
+      role: "user",
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: "7d" }
+  );
 
+  res.redirect(
+    `https://fable-client-five.vercel.app/login?token=${token}`
+  );
+});
 
     app.get("/users/me", verifyJWT, async (req, res) => {
       const user = await usersCollection.findOne({ email: req.decoded.email });
