@@ -159,6 +159,33 @@ app.get("/auth/google", (req, res) => {
   );
 });
 
+
+app.get("/auth/google", async (req, res) => {
+  const email = "googleuser@gmail.com";
+
+  let user = await usersCollection.findOne({ email });
+
+  if (!user) {
+    await usersCollection.insertOne({
+      name: "Google User",
+      email,
+      password: "",
+      role: "user",
+      createdAt: new Date(),
+    });
+  }
+
+  const token = jwt.sign(
+    { email },
+    process.env.JWT_SECRET,
+    { expiresIn: "7d" }
+  );
+
+  res.redirect(
+    `https://fable-client-five.vercel.app/login?token=${token}`
+  );
+});
+
     app.get("/users/me", verifyJWT, async (req, res) => {
       const user = await usersCollection.findOne({ email: req.decoded.email });
       res.send(user);
