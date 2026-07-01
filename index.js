@@ -235,34 +235,43 @@ app.get("/auth/google", async (req, res) => {
 
 app.get("/writers/top", async (req, res) => {
   try {
-    const writers = await ebooksCollection
-      .aggregate([
-        {
-          $group: {
-            _id: "$writerEmail",
-            name: { $first: "$writerName" },
-            totalSales: { $sum: "$sales" },
-            totalBooks: { $sum: 1 },
-            avatar: { $first: "$coverUrl" }
-          }
+    const writers = await ebooksCollection.aggregate([
+      {
+        $group: {
+          _id: "$writerEmail",
+          name: { $first: "$writerName" },
+          totalSales: { $sum: "$sales" },
+          totalBooks: { $sum: 1 },
         },
-        {
-          $sort: {
-            totalSales: -1
-          }
+      },
+      {
+        $sort: {
+          totalSales: -1,
         },
-        {
-          $limit: 3
-        }
-      ])
-      .toArray();
+      },
+      {
+        $limit: 3,
+      },
+    ]).toArray();
 
-    res.send(writers);
+    const finalWriters = await Promise.all(
+      writers.map(async (writer) => {
+        const user = await usersCollection.findOne({
+          email: writer._id,
+        });
+
+        return {
+          ...writer,
+          avatar: user?.avatar || "",
+        };
+      })
+    );
+
+    res.send(finalWriters);
   } catch (err) {
     res.status(500).send(err);
   }
 });
-
     
     app.post("/forgot-password", async (req, res) => {
       try {
