@@ -100,6 +100,23 @@ async function run() {
   next();
 };
 
+const verifyWriter = async (req, res, next) => {
+  const user = await usersCollection.findOne({
+    email: req.decoded.email,
+  });
+
+  if (user?.role !== "writer") {
+    return res.status(403).send({
+      message: "Writer only",
+    });
+  }
+
+  next();
+};
+
+
+
+
  app.post("/jwt", async (req, res) => {
   const { email, password } = req.body;
 
