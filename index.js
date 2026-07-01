@@ -124,7 +124,7 @@ async function run() {
         const result = await usersCollection.insertOne({
           name: user.name || user.fullName,
           email: user.email,
-          password: user.password,
+         password: user.password || "",
           role: finalRole, 
           createdAt: new Date()
         });
