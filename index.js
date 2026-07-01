@@ -6,7 +6,7 @@ const jwt = require("jsonwebtoken");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
-const genresCollection = database.collection("genres");
+
 
 
 dotenv.config();
@@ -73,6 +73,7 @@ async function run() {
     console.log("✅ MongoDB Connected Successfully");
 
     const database = client.db("fable");
+    const genresCollection = database.collection("genres");
     const usersCollection = database.collection("users");
     const ebooksCollection = database.collection("ebooks");
     const transactionsCollection = database.collection("transactions");
@@ -145,20 +146,7 @@ const verifyWriter = async (req, res, next) => {
 
 
 // ✅ GOOGLE LOGIN ROUTE (FIXED)
-app.get("/auth/google", (req, res) => {
-  const token = jwt.sign(
-    {
-      email: "googleuser@gmail.com",
-      role: "user",
-    },
-    process.env.JWT_SECRET,
-    { expiresIn: "7d" }
-  );
 
-  res.redirect(
-    `https://fable-client-five.vercel.app/login?token=${token}`
-  );
-});
 
 
 app.get("/auth/google", async (req, res) => {
