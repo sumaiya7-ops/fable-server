@@ -145,6 +145,8 @@ const verifyWriter = async (req, res, next) => {
 
 // ✅ GOOGLE LOGIN ROUTE (FIXED)
 app.get("/auth/google", (req, res) => {
+  console.log("GOOGLE ROUTE HIT");
+
   const token = jwt.sign(
     {
       email: "googleuser@gmail.com",
