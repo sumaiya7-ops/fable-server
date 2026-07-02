@@ -179,32 +179,37 @@ app.get("/auth/google", async (req, res) => {
       res.send(user);
     });
 
-    app.post("/users", async (req, res) => {
-      try {
-        const user = req.body;
-        const existingUser = await usersCollection.findOne({ email: user.email });
-        if (existingUser) {
-          return res.status(400).send({ message: "User already exists" });
-        }
+app.post("/users", async (req, res) => {
+  try {
+    const user = req.body;
 
-        let finalRole = "user";
-       if (!user || (user.role !== "admin" && user.role !== "writer")) {
-          finalRole = "writer";
-        }
-
-        const result = await usersCollection.insertOne({
-          name: user.name || user.fullName,
-          email: user.email,
-         password: user.password || "",
-          role: finalRole, 
-          createdAt: new Date()
-        });
-
-        res.send(result);
-      } catch (error) {
-        res.status(500).send({ message: "Internal server error during registration", error: error.message });
-      }
+    const existingUser = await usersCollection.findOne({
+      email: user.email,
     });
+
+    // Already exists হলে error দিবে না
+    if (existingUser) {
+      return res.send(existingUser);
+    }
+
+    const finalRole = user.role || "user";
+
+    const result = await usersCollection.insertOne({
+      name: user.name || user.fullName,
+      email: user.email,
+      password: user.password || "",
+      role: finalRole,
+      createdAt: new Date(),
+    });
+
+    res.send(result);
+  } catch (error) {
+    res.status(500).send({
+      message: "Internal server error during registration",
+      error: error.message,
+    });
+  }
+});
 
     app.get("/writers-count", async (req, res) => {
   try {
