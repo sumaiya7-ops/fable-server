@@ -358,6 +358,16 @@ app.get("/writers/top", async (req, res) => {
       }
     });
 
+app.put("/ebooks/:id", verifyJWT, async (req, res) => {
+  await ebooksCollection.updateOne(
+    { _id: new ObjectId(req.params.id) },
+    { $set: req.body }
+  );
+
+  res.send({ success: true });
+});
+
+
     app.get("/genres", async (req, res) => {
   try {
     const genres = await genresCollection.find().toArray();
