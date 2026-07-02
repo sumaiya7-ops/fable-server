@@ -420,24 +420,60 @@ app.get("/genres/count", async (req, res) => {
     });
 
    
+  
     app.put("/users/:id", async (req, res) => {
-      try {
-        const id = req.params.id;
-        const updatedData = req.body; 
-        const filter = { _id: new ObjectId(id) };
-        const updateDoc = { $set: { status: updatedData.status } };
+  try {
+    const id = req.params.id;
+    const { status } = req.body;
 
-        const result = await ebooksCollection.updateOne(filter, updateDoc);
-        if (result.matchedCount > 0) {
-          console.log(`📝 Simulated Notification: Ebook with ID ${id} status successfully flipped to [${updatedData.status}] in MongoDB!`);
-          res.send({ success: true, message: "Ebook status synchronized successfully." });
-        } else {
-          res.status(404).send({ success: false, message: "Ebook not found in database registry." });
-        }
-      } catch (error) {
-        res.status(500).send({ message: "Internal Server Error", error: error.message });
+    const filter = { _id: new ObjectId(id) };
+
+    const updateDoc = {
+      $set: { status: status }
+    };
+
+    const result = await usersCollection.updateOne(filter, updateDoc);
+
+    if (result.matchedCount > 0) {
+      console.log(`User ${id} status updated to ${status}`);
+      res.send({ success: true, message: "User status updated" });
+    } else {
+      res.status(404).send({ success: false, message: "User not found" });
+    }
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+});
+
+
+    app.put("/users/:id", verifyJWT, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const result = await usersCollection.updateOne(
+      { _id: new ObjectId(id) },
+      {
+        $set: {
+          status: status,
+        },
       }
-    });
+    );
+
+    res.send(result);
+  } catch (error) {
+    res.status(500).send({ message: "User update failed" });
+  }
+});
+
+app.get("/users", verifyJWT, async (req, res) => {
+  try {
+    const users = await usersCollection.find().toArray();
+    res.send(users);
+  } catch (error) {
+    res.status(500).send([]);
+  }
+});
 
     app.put("/ebooks/:id", verifyJWT, verifyWriter, async (req, res) => {
       try {
