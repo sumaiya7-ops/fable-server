@@ -123,6 +123,7 @@ const verifyWriter = async (req, res, next) => {
   const { email, password } = req.body;
 
   const user = await usersCollection.findOne({ email });
+  console.log(user);
 
   if (!user) {
     return res.status(401).send({ message: "User not found" });
@@ -187,7 +188,7 @@ app.post("/users", async (req, res) => {
       email: user.email,
     });
 
-    // Already exists হলে error দিবে না
+   
     if (existingUser) {
       return res.send(existingUser);
     }
