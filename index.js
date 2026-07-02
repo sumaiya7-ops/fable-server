@@ -852,6 +852,13 @@ app.get("/bookmarks", verifyJWT, async (req, res) => {
       {
         $unwind: "$bookDetails",
       },
+      {
+        $project: {
+          _id: 1,
+          ebookId: "$bookDetails._id",
+          bookDetails: 1,
+        },
+      },
     ]).toArray();
 
     res.send(bookmarks);
