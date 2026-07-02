@@ -232,12 +232,12 @@ app.get("/writers/top", async (req, res) => {
   try {
     const writers = await ebooksCollection.aggregate([
       {
-        $group: {
-          _id: "$writerEmail",
-          name: { $first: "$writerName" },
-          totalSales: { $sum: "$sales" },
-          totalBooks: { $sum: 1 }
-        }
+     $group: {
+  _id: "$writerEmail",
+  name: { $first: "$writerName" },
+  totalSales: { $sum: "$sales" },
+  bookCount: { $sum: 1 }
+}
       },
       {
         $sort: { totalSales: -1 }
