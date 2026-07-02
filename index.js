@@ -870,11 +870,20 @@ app.get("/bookmarks", verifyJWT, async (req, res) => {
   }
 });
 
-    app.delete("/bookmarks/:id", verifyJWT, async (req, res) => {
-      try {
-        res.send(await bookmarksCollection.deleteOne({ _id: new ObjectId(req.params.id) }));
-      } catch (error) { res.status(500).send({ message: "Delete failed" }); }
+app.delete("/bookmarks/:id", verifyJWT, async (req, res) => {
+  try {
+    const id = req.params.id;
+
+    const result = await bookmarksCollection.deleteOne({
+      _id: new ObjectId(id),
+      userEmail: req.decoded.email, // 🔥 IMPORTANT SECURITY FIX
     });
+
+    res.send(result);
+  } catch (error) {
+    res.status(500).send({ message: "Delete failed" });
+  }
+});
 
     app.get("/privacy-status", async (req, res) => {
       res.send({ success: true, status: "Compliant", version: "2026.1", encryption: "AES-256 Active" });
