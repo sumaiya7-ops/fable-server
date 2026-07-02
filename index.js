@@ -312,33 +312,60 @@ app.get("/writers/top", async (req, res) => {
       }
     });
     // --- BROWSE EBOOKS ENGINE ---
-    app.get("/ebooks", async (req, res) => {
-      try {
-        const { search, genre, priceRange, availability, sortBy, page = 1, limit = 6 } = req.query;
-        let query = {};
-        if (search) query.$or = [{ title: { $regex: search, $options: "i" } }, { writerName: { $regex: search, $options: "i" } }];
-        if (genre && genre !== "All Genres") {
-          query.genre = { $regex: new RegExp(`^${genre}$`, "i") };
-        }
-        if (priceRange) query.price = { $lte: parseFloat(priceRange) };
-        if (availability && availability !== "All") {
-          if (availability === "Free") query.price = 0;
-          else if (availability === "Paid") query.price = { $gt: 0 };
-        }
+app.get("/ebooks", async (req, res) => {
+  try {
+    const {
+      search,
+      genre,
+      priceRange,
+      availability,
+      page = 1,
+      limit = 6
+    } = req.query;
 
-        let sortOption = {};
-        if (sortBy === "Newest First") sortOption.createdAt = -1;
-        else if (sortBy === "Price Low → High") sortOption.price = 1;
-        else if (sortBy === "Price High → Low") sortOption.price = -1;
+    let query = {};
 
-        const skip = (parseInt(page) - 1) * parseInt(limit);
-        const totalEbooks = await ebooksCollection.countDocuments(query);
-        const ebooks = await ebooksCollection.find(query).sort(sortOption).skip(skip).limit(parseInt(limit)).toArray();
-        res.send({ ebooks, totalEbooks, totalPages: Math.ceil(totalEbooks / parseInt(limit)), currentPage: parseInt(page) });
-      } catch (error) {
-        res.status(500).send({ message: "Filtering failed" });
-      }
+    if (search)
+      query.$or = [
+        { title: { $regex: search, $options: "i" } },
+        { writerName: { $regex: search, $options: "i" } }
+      ];
+
+    if (genre && genre !== "All Genres") {
+      query.genre = { $regex: new RegExp(`^${genre}$`, "i") };
+    }
+
+    if (priceRange) query.price = { $lte: parseFloat(priceRange) };
+
+    if (availability && availability !== "All") {
+      if (availability === "Free") query.price = 0;
+      else if (availability === "Paid") query.price = { $gt: 0 };
+    }
+
+    // pagination logic
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const skip = (pageNum - 1) * limitNum;
+
+    const totalEbooks = await ebooksCollection.countDocuments(query);
+
+    const ebooks = await ebooksCollection
+      .find(query)
+      .skip(skip)
+      .limit(limitNum)
+      .toArray();
+
+    res.send({
+      ebooks,
+      totalPages: Math.ceil(totalEbooks / limitNum),
+      currentPage: pageNum,
+      totalEbooks
     });
+
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+});
 
     app.get("/ebook/:id", async (req, res) => {
       try {
